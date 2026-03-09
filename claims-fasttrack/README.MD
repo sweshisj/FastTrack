@@ -11,3 +11,9 @@ Claims FastTrack is a web application that automates the intake and triage proce
 4.  **RPA Integration:** A bot automatically updates the legacy portal for valid claims, leaving a full audit log.
 
 ## Workflow Diagram
+[Frontend] -> API (Django) -> [Database]
+                                 |
+                                 v
+                          [Background Worker] -> [RPA Bot] -> [Legacy System]
+
+                          
