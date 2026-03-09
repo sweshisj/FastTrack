@@ -26,3 +26,42 @@ class ClaimViewSet(viewsets.ModelViewSet):
         audit_events = claim.audit_logs.all().order_by('-timestamp')
         data = [{'action': event.action, 'timestamp': event.timestamp, 'details': event.details} for event in audit_events]
         return Response(data)
+    
+    # claims/views.py
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Endpoint: POST /api/claims/{id}/approve/"""
+        claim = self.get_object()
+        
+        # In a real app, you might update the description here too
+        claim.status = 'APPROVED'
+        claim.save()
+
+        AuditEvent.objects.create(
+            claim=claim,
+            action='HUMAN_APPROVAL',
+            details=f"Claim approved by staff. Ready for next steps."
+        )
+        
+        return Response({'status': 'Claim approved successfully'})
+
+    @action(detail=True, methods=['post'])
+    def retry(self, request, pk=None):
+        """Endpoint: POST /api/claims/{id}/retry/"""
+        claim = self.get_object()
+        
+        # Reset to NEW and run triage again
+        claim.status = 'NEW'
+        claim.save()
+
+        AuditEvent.objects.create(
+            claim=claim,
+            action='RETRY_TRIGGERED',
+            details="Manual retry initiated by staff."
+        )
+
+        # Re-run the triage logic from Day 3
+        claim.perform_triage()
+        
+        return Response({'status': 'Triage retried', 'current_status': claim.status})
